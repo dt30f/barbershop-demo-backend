@@ -302,8 +302,14 @@ function buildCalendarColumns(result: GetScheduleDayResult): ScheduleDayCalendar
         return {
           id: appointment.id,
           type: 'APPOINTMENT' as const,
-          startAt: appointment.startAt,
-          endAt: appointment.endAt,
+          startAt: formatUtcDateInTimeZone(
+            new Date(appointment.startAt),
+            result.timezone,
+          ),
+          endAt: formatUtcDateInTimeZone(
+            new Date(appointment.endAt),
+            result.timezone,
+          ),
           title: title.title,
           subtitle: title.subtitle,
           status: appointment.status,
