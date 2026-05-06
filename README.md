@@ -1,60 +1,161 @@
-# Backend
+# Barber Booking Backend API
 
-Ovo je NestJS-oriented backend skeleton za MVP module:
+Backend API for a white-label barber booking platform built for real salon operations.
+
+This repository is one part of a larger product suite:
+- `backend` - NestJS API + booking engine
+- `admin-web` - salon/admin dashboard
+- `mobile-app` - customer-facing Flutter app
+
+## Project Summary
+
+This backend powers a barber booking SaaS workflow where:
+- customers browse barbers, choose a service, and book a time slot
+- salon admins manage schedules, appointments, services, pricing, and salon settings
+- barbers can view their schedule, add manual bookings, and block unavailable time
+
+The system is designed as a white-label MVP for a single salon deployment, while keeping the data model and architecture clean enough for future expansion.
+
+## Core Features
+
+- Customer login with development-friendly phone-based auth flow
+- Staff login for `ADMIN` and `BARBER` roles
+- Public barber list and barber detail endpoints
+- Service-based availability engine
+- Appointment creation, cancellation, manual booking, and status updates
+- Day and week schedule endpoints for admin and barber views
+- Working hours, day off, and blocked slot management
+- Automatic `REQUIRES_RESCHEDULE` transition when availability conflicts are introduced
+- Notification records for impacted appointments
+- PostgreSQL persistence with overlap protection at database level
+
+## Technical Highlights
+
+- NestJS modular architecture
+- PostgreSQL with transactional booking and scheduling flows
+- Slot-based schedule model with configurable slot granularity
+- White-label salon context via environment configuration
+- DTO validation with strict request whitelisting
+- E2E-tested booking, auth, and schedule flows
+
+## Architecture
+
+Main modules:
+- `auth`
 - `availability`
 - `appointments`
+- `schedule`
+- `management`
 
-Napomene:
-- Ovo jos nije pun proizvodni backend.
-- `auth` modul sada pokriva customer login/refresh/logout/profile i staff login/refresh/logout.
-- `availability` service ima implementiran domain flow i konkretan PostgreSQL repository.
-- `appointments` service ima implementiran orchestration flow za create/list/cancel/update i konkretan PostgreSQL repository.
-- `schedule` modul sada pokriva admin/barber write flow za `day off` i `blocked slot`, ukljucujuci automatski `REQUIRES_RESCHEDULE` update i `IN_APP` notification zapis za pogodjene termine.
-- day/week schedule read payload sada vraca slot-level `summary` i `segments` po barberu, plus `calendar.timeAxis`, `calendar.columns` i week `calendar.days` shape za laksi web admin rendering.
-- Baza se konektuje preko `pg` pool-a i `DATABASE_URL` ili `DB_*` env promenljivih.
-- White-label salon context u ovom MVP/dev koraku dolazi iz `APP_SALON_ID` env promenljive ili iz `x-salon-id` header-a.
-- Za zasticene rute backend prvo pokusava Bearer access token, pa tek onda dev header fallback `x-customer-id`, `x-admin-user-id`, `x-barber-id`.
-- DTO fajlovi, odgovori i struktura foldera prate `BACKEND_CONTRACT_AVAILABILITY_APPOINTMENTS.md`.
+Supporting layers:
+- shared request-context guards/decorators
+- HMAC token service for access/refresh sessions
+- PostgreSQL repository layer via `pg`
 
-Lokalni start, kada se instaliraju paketi:
-- `npm install`
-- `npm run start:dev`
-- `npm run test:e2e`
+## Tech Stack
 
-MVP auth rute:
+- NestJS
+- TypeScript
+- PostgreSQL
+- `pg`
+- class-validator / class-transformer
+- Jest (E2E)
+
+## API Capabilities
+
+Examples of implemented API areas:
 - `POST /api/v1/auth/customer/login`
-- `POST /api/v1/auth/customer/refresh`
-- `POST /api/v1/auth/customer/logout`
-- `GET /api/v1/auth/customer/me`
 - `POST /api/v1/auth/staff/login`
-- `POST /api/v1/auth/staff/refresh`
-- `POST /api/v1/auth/staff/logout`
+- `GET /api/v1/public/barbers`
+- `GET /api/v1/public/barbers/:barberId`
+- `GET /api/v1/public/barbers/:barberId/availability`
+- `POST /api/v1/customer/appointments`
+- `GET /api/v1/customer/appointments/future`
+- `GET /api/v1/admin/appointments`
+- `GET /api/v1/admin/schedule/day`
+- `GET /api/v1/admin/schedule/week`
 - `POST /api/v1/admin/barbers/:barberId/day-off`
-- `DELETE /api/v1/admin/barbers/:barberId/day-off/:dayOffId`
 - `POST /api/v1/admin/barbers/:barberId/blocked-slots`
-- `DELETE /api/v1/admin/barbers/:barberId/blocked-slots/:blockedSlotId`
-- `GET /api/v1/admin/appointments?dateFrom?=YYYY-MM-DD&dateTo?=YYYY-MM-DD&barberId?=uuid&status?=CONFIRMED&customerPhone?=partial&page?=1&pageSize?=20&sortBy?=START_AT&sortDirection?=ASC`
-- `GET /api/v1/admin/schedule/day?date=YYYY-MM-DD&barberId?=uuid`
-- `GET /api/v1/admin/schedule/week?startDate=YYYY-MM-DD&barberId?=uuid`
-- `POST /api/v1/barber/day-off`
-- `DELETE /api/v1/barber/day-off/:dayOffId`
-- `POST /api/v1/barber/blocked-slots`
-- `DELETE /api/v1/barber/blocked-slots/:blockedSlotId`
-- `GET /api/v1/barber/schedule/day?date=YYYY-MM-DD`
-- `GET /api/v1/barber/schedule/week?startDate=YYYY-MM-DD`
+- `PUT /api/v1/admin/settings/salon`
+- `PUT /api/v1/admin/settings/working-hours`
 
-Demo staff kredencijali posle svih migracija:
+## Local Development
+
+### Requirements
+
+- Node.js 20+
+- PostgreSQL
+- npm
+
+### Environment Variables
+
+Create `.env` from `.env.example`.
+
+Required values:
+- `DATABASE_URL` or `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`
+- `APP_SALON_ID`
+- `AUTH_ACCESS_TOKEN_SECRET`
+- `AUTH_REFRESH_TOKEN_SECRET`
+
+Optional:
+- `DB_POOL_MAX`
+- `PORT`
+
+### Run Locally
+
+```bash
+npm install
+npm run start:dev
+```
+
+### Test and Build
+
+```bash
+npm run build
+npm run test:e2e
+npm run lint
+```
+
+## Demo Credentials
+
+After migrations and seed:
+
 - `admin@downtownbarber.rs` / `Admin123!`
 - `nikola@downtownbarber.rs` / `Barber123!`
 
-Potrebne env promenljive:
-- `DATABASE_URL` ili `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`
-- `APP_SALON_ID` za fiksni white-label deployment context, ili alternativno `x-salon-id` header tokom razvoja
-- `AUTH_ACCESS_TOKEN_SECRET` i `AUTH_REFRESH_TOKEN_SECRET` za bezbednije tokene van lokalnog razvoja
-- opciono `DB_POOL_MAX`
+## Deployment Notes
 
-Sledeci preporuceni koraci:
-- prosiriti e2e pokrivenost na overlap i 24h cancellation edge-case
-- krenuti na admin app day calendar UI i appointments table, jer backend sada vec ima pagination/sort i week/day calendar payload spreman za frontend
-- uvesti notification scheduling worker
-- zameniti dev header fallback pravim auth guard-ovima kada MVP auth bude finalizovan
+This backend was prepared for simple cloud deployment:
+- supports hosted PostgreSQL through `DATABASE_URL`
+- supports platform-defined `PORT`
+- works well with Render or Railway style Node hosting
+
+Current demo deployment stack:
+- backend API deployed on `Render`
+- PostgreSQL database hosted on `Supabase`
+- designed to work together with the `admin-web` app deployed on `Vercel`
+
+This setup was used to demonstrate a realistic hosted MVP environment instead of a localhost-only prototype.
+
+## Screenshots / Diagrams
+
+Current backend visuals:
+
+![Database / ER diagram](./docs/screenshots/postgres.png)
+![Swagger / API overview](./docs/screenshots/swagger.png)
+
+## What This Project Demonstrates
+
+This repository is strong portfolio material for:
+- backend API design
+- scheduling and booking logic
+- time-slot availability calculation
+- transactional PostgreSQL workflows
+- role-based access control
+- white-label SaaS backend thinking
+
+## Related Repositories
+
+This backend is intended to be presented together with:
+- the salon admin dashboard repository
+- the customer mobile app repository
